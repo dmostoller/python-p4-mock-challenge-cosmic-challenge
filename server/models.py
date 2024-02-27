@@ -26,9 +26,10 @@ class Planet(db.Model, SerializerMixin):
     nearest_star = db.Column(db.String)
 
     # Add relationship
+    missions = db.relationship('Mission', back_populates='planet', cascade='all, delete')
 
     # Add serialization rules
-
+    serialize_rules = ('-missions.planet', )
 
 class Scientist(db.Model, SerializerMixin):
     __tablename__ = 'scientists'
@@ -38,11 +39,22 @@ class Scientist(db.Model, SerializerMixin):
     field_of_study = db.Column(db.String)
 
     # Add relationship
-
+    missions = db.relationship('Mission', back_populates='scientist', cascade='all, delete')
     # Add serialization rules
+    serialize_rules = ('-missions.scientist', )
 
     # Add validation
-
+    @validates("name")
+    def validate_name(self, key, name):
+        if not name:
+            raise ValueError("scientist must have a name") 
+        return name 
+    
+    @validates("field_of_study")
+    def validate_field_of_study(self, key, field_of_study):
+        if not field_of_study:  
+            raise ValueError("scientist must have a field of study")
+        return field_of_study
 
 class Mission(db.Model, SerializerMixin):
     __tablename__ = 'missions'
@@ -51,10 +63,30 @@ class Mission(db.Model, SerializerMixin):
     name = db.Column(db.String)
 
     # Add relationships
-
+    planet_id = db.Column(db.Integer, db.ForeignKey('planets.id'))
+    planet = db.relationship('Planet', back_populates='missions')
+    
+    scientist_id = db.Column(db.Integer, db.ForeignKey('scientists.id'))
+    scientist = db.relationship('Scientist', back_populates='missions') 
     # Add serialization rules
-
+    serialize_rules = ('-planet.missions', '-scientist.missions')
     # Add validation
+    @validates("name")
+    def validate_name(self, key, name):
+        if not name:
+            raise ValueError("Mission must have a name")
+        return name
+                   
+    @validates("scientist_id")
+    def validate_s_id(self, key, scientist_id):
+        if not scientist_id:
+            raise ValueError("Mission must have a scientist_id")
+        return scientist_id
 
-
+    @validates("planet_id")
+    def validate_p_id(self, key, planet_id):
+        if not planet_id:
+            raise ValueError("Mission must have a planet_id")
+        return planet_id
+    
 # add any models you may need.
